@@ -119,3 +119,64 @@ where s.order_date >= mem.join_date
 select customer_id, product_name as First_Product_Purchased, join_date, order_date
 from First_Item_Purchased
 where rank = 1
+
+--Which item was purchased just before the customer became a member?
+
+With Item_Purchased_Before as (
+select s.customer_id, s.order_date, m.product_name, mem.join_date,
+DENSE_RANK () OVER (PARTITION BY s.customer_id order by s.order_date DESC) as rank
+from sales s join menu m 
+on s.product_id = m.product_id
+join members mem
+on s.customer_id = mem.customer_id
+where s.order_date < mem.join_date
+)
+select customer_id, product_name as Last_Item_Purchased, join_date, order_date
+from Item_Purchased_Before
+where rank = 1
+
+--What is the total items and amount spent for each member before they became a member?
+
+select s.customer_id,count(m.product_id) as Total_Items, sum(m.price) as Amount
+from sales s join menu m
+on s.product_id = m.product_id
+join members mem 
+on s.customer_id = mem.customer_id
+where s.order_date < mem.join_date
+group by s.customer_id
+
+--If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+select s.customer_id, sum (case 
+when m.product_name = 'sushi' 
+then m.price * 20 
+else m.price * 10 
+end) as Total_Points_Earned
+from sales s join menu m
+on s.product_id = m.product_id
+group by s.customer_id;
+
+--In the first week after a customer joins the program (including their join date) they earn 2x points on all items,
+--not just sushi - how many points do customer A and B have at the end of January?
+
+with 
+first_joining_week as (
+select s.customer_id, sum(m.price * 20) as first_joining_points
+from sales s join menu m
+on s.product_id = m.product_id
+join members mem on s.customer_id = mem.customer_id
+where s.order_date between mem.join_date and  dateadd(DAY,7,mem.join_date)
+group by s.customer_id
+),
+normal_week as (
+select s.customer_id, sum(case when m.product_name = 'sushi' then m.price*20 else m.price*10 end) as january_points
+from sales s join menu m
+on s.product_id = m.product_id
+join members mem on s.customer_id = mem.customer_id
+where month(s.order_date) = 1 and 
+s.order_date not between mem.join_date and DATEADD(day,7,mem.join_date)
+group by s.customer_id
+)
+select i.customer_id, i.first_joining_points + j.january_points as Total_Points
+from first_joining_week i join normal_week j 
+on i.customer_id = j.customer_id
