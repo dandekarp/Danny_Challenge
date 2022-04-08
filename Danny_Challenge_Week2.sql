@@ -21,12 +21,11 @@ CREATE TABLE customer_orders (
   "pizza_id" INTEGER,
   "exclusions" VARCHAR(4),
   "extras" VARCHAR(4),
-  "order_time" TIMESTAMP 
+  --"order_time" TIMESTAMP 
+  "order_time" datetime
 );
 
 --need to change data type of "order_time" to 'datetime' as 'timestamp' datatype takes time in realtime
-
-alter table customer_orders alter column order_time datetime;
 
 INSERT INTO customer_orders("order_id", "customer_id", "pizza_id", "exclusions", "extras", "order_time")
 VALUES
@@ -116,3 +115,95 @@ VALUES
   (11, 'Tomatoes'),
   (12, 'Tomato Sauce');
 
+  select * from customer_orders
+  select * from customer_orders
+  where extras = 'NULL'
+  select * from pizza_names
+  select * from pizza_recipes
+  select * from pizza_toppings
+  select * from runner_orders
+  select * from runners
+
+--cleaning and preping data in customer_orders table:
+
+select order_id, customer_id, pizza_id,
+case when exclusions like '%null%' or exclusions is null
+	 then ''
+	 else exclusions
+end as eclusions,
+case when extras like '%null%' or extras is null
+	 then ''
+	 else extras
+end as extras,
+order_time
+into ##customer_orders
+from customer_orders
+
+select * from customer_orders
+select * from ##customer_orders
+
+Changes:
+Changing all the NULL and 'null' to blanks for strings
+Changing all the 'null' to NULL for non strings
+Removing 'km' from distance
+Removing anything after the numbers from duration
+Creating a clean temp table
+
+
+select * from runner_orders
+
+select order_id, runner_id,
+case when pickup_time like '%null%'
+	 then null
+	 else pickup_time
+end as pickup_time,
+case when distance like '%null%'
+	 then null
+	 else trim('%km%' from distance)
+end as distance,
+case when duration like '%null%'
+	 then null
+	 else left(duration,2)
+end as duration_minutes,
+case when cancellation is null or cancellation like '%null%'
+	 then ''
+	 else cancellation
+end as cancellation
+into ##runner_orders
+from runner_orders
+
+select * from runner_orders
+select * from ##runner_orders
+
+for part c :
+
+select * from pizza_recipes
+
+select pizza_id, 
+trim(value) as topping_id
+into ##pizza_recipes
+from pizza_recipes
+cross apply string_split(toppings, ',')
+
+--Argument data type text is invalid for argument 1 of string_split function.
+
+--need to change datatype of toppings from text to varchar
+
+truncate table pizza_recipes
+alter table pizza_recipes alter column toppings varchar(100)
+
+INSERT INTO pizza_recipes
+  ("pizza_id", "toppings")
+VALUES
+  (1, '1, 2, 3, 4, 5, 6, 8, 10'),
+  (2, '4, 6, 7, 9, 11, 12');
+
+select * from pizza_recipes
+
+select pizza_id, trim(value) as topping_id
+into ##pizza_recipes
+from pizza_recipes
+cross apply string_split(toppings, ',')
+
+select * from pizza_recipes
+select * from ##pizza_recipes
