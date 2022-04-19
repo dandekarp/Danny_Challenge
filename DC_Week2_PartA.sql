@@ -15,5 +15,15 @@ group by runner_id
 
 --4.How many of each type of pizza was delivered?
 
+select pn.pizza_name,
+count(ro.pickup_time) as total_delivered
+from ##customer_orders co
+join pizza_names pn
+on co.pizza_id = pn.pizza_id
+join ##runner_orders ro
+on co.order_id = ro.order_id
+group by pn.pizza_name
+
+select * from ##customer_orders
 select * from pizza_names
-select * from 
+select * from ##runner_orders
